@@ -44,7 +44,7 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1"
     });
 
-    // ?? JWT Security Definition
+    //JWT Security Definition
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -52,10 +52,10 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Bearer {token} þeklinde giriniz"
+        Description = "Only enter token"
     });
 
-    // ?? JWT Security Requirement
+    //JWT Security Requirement
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {

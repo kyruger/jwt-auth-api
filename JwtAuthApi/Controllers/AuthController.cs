@@ -34,7 +34,9 @@ namespace JwtAuthApi.Controllers
             var user = new AppUser
             {
                 Email = model.Email,
-                PasswordHash = PasswordHasher.Hash(model.Password)
+                PasswordHash = PasswordHasher.Hash(model.Password),
+                //Role = "Admin" first time creating admin
+
             };
             _context.Users.Add(user);
             _context.SaveChanges();
