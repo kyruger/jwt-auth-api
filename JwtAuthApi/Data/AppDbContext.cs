@@ -1,5 +1,4 @@
-﻿
-using JwtAuthApi.Models;
+﻿using JwtAuthApi.Entities.Concrete;
 using Microsoft.EntityFrameworkCore;
 
 namespace JwtAuthApi.Data
@@ -10,7 +9,7 @@ namespace JwtAuthApi.Data
         {
             
         }
-        public DbSet<User> Users { get; set; }
+        public DbSet<AppUser> Users { get; set; }
     }
 
     

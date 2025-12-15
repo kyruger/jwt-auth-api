@@ -1,0 +1,18 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace JwtAuthApi.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class TestController : ControllerBase
+    {
+        [Authorize]
+        [HttpGet("jwtData")]
+        public IActionResult GetProtectedData()
+        {
+            return Ok("this is jwt data");
+        }
+    }
+}

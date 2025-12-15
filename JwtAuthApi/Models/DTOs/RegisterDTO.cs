@@ -1,4 +1,4 @@
-﻿namespace JwtAuthApi.DTOs
+﻿namespace JwtAuthApi.Models.DTOs
 {
     public class RegisterDTO
     {
