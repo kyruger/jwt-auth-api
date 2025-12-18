@@ -90,14 +90,30 @@ namespace JwtAuthApi.Controllers
             }
             var storedRefreshToken = _context.RefreshTokens.Include(rt=>rt.User)
                 .SingleOrDefault(rt => 
-                rt.Token == refreshTokenFromCookie &&
-                !rt.IsRevoked &&
-                rt.Expires > DateTime.UtcNow);
+                rt.Token == refreshTokenFromCookie);
 
-            if(storedRefreshToken == null)
+            if(storedRefreshToken != null && storedRefreshToken.IsRevoked)
+            {
+                var userTokens= _context.RefreshTokens.Where(rt=> rt.UserId == storedRefreshToken.User.Id && !rt.IsRevoked).ToList();
+
+                foreach(var token in userTokens)
+                    token.IsRevoked = true; 
+
+
+                _context.SaveChanges();
+
+                Response.Cookies.Delete("refreshToken");
+
+                return Unauthorized("Possible token abuse detected. All tokens revoked.");
+            }
+
+
+            if(storedRefreshToken==null || storedRefreshToken.Expires < DateTime.Now || storedRefreshToken.IsRevoked)
             {
                 return Unauthorized("Invalid or expired refresh token");
             }
+
+
             storedRefreshToken.IsRevoked = true;
 
             var newRefreshToken = new RefreshToken
