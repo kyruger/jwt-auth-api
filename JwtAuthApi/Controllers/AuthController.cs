@@ -125,5 +125,32 @@ namespace JwtAuthApi.Controllers
                 AccessToken = newAccessToken,
             });
         }
+        [HttpPost("logout")]
+        public IActionResult Logout() 
+        {
+            if (!Request.Cookies.TryGetValue("refreshToken", out var refreshTokenFromCookie)) 
+            {
+                return BadRequest("Refresh token is missing");
+            }
+
+            var storedRefreshToken = _context.RefreshTokens.
+                SingleOrDefault(rt=>
+                rt.Token == refreshTokenFromCookie &&
+                !rt.IsRevoked);
+
+            if(storedRefreshToken != null)
+            {
+                storedRefreshToken.IsRevoked = true;
+                _context.SaveChanges();
+            }
+
+
+            Response.Cookies.Delete("refreshToken");
+
+            return Ok("Logged out successfully");
+
+
+
+        }
     } 
 }
