@@ -3,7 +3,7 @@ using System.Text;
 
 namespace JwtAuthApi.Helpers
 {
-    public static class PasswordHasher
+    public static class PasswordHasherHelper
     {
         public static  string Hash(string password)
         {

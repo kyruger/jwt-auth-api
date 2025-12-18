@@ -10,6 +10,7 @@ namespace JwtAuthApi.Data
             
         }
         public DbSet<AppUser> Users { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
     }
 
     

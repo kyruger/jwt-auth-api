@@ -6,6 +6,7 @@ using JwtAuthApi.Models.DTOs;
 using JwtAuthApi.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace JwtAuthApi.Controllers
 {
@@ -34,7 +35,7 @@ namespace JwtAuthApi.Controllers
             var user = new AppUser
             {
                 Email = model.Email,
-                PasswordHash = PasswordHasher.Hash(model.Password),
+                PasswordHash = PasswordHasherHelper.Hash(model.Password),
                 //Role = "Admin" first time creating admin
 
             };
@@ -49,13 +50,80 @@ namespace JwtAuthApi.Controllers
         public IActionResult Login(LoginDTO model)
         {
             var user = _context.Users.SingleOrDefault(u => u.Email == model.Email);
-            if(user==null || !PasswordHasher.Verify(model.password, user.PasswordHash))
+            if(user==null || !PasswordHasherHelper.Verify(model.password, user.PasswordHash))
             {
                 return Unauthorized("Invalid email or password");
             }
             
-            var token = _jwtTokenService.GenerateToken(user);
-            return Ok(new { token });
+            var accessToken = _jwtTokenService.GenerateToken(user);
+
+            var refreshToken = new RefreshToken
+            {
+                Token = RefreshTokenHelper.GenerateToken(),
+                Expires=DateTime.Now.AddDays(7),
+                UserId = user.Id
+            };
+
+
+            _context.RefreshTokens.Add(refreshToken);
+            _context.SaveChanges();
+
+            Response.Cookies.Append("refreshToken", refreshToken.Token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = refreshToken.Expires
+            });
+
+            return Ok(new 
+            {
+                AccessToken = accessToken,
+            });
+        }
+        [HttpPost("refresh-token")]
+        public IActionResult RefreshToken()
+        {
+            if(!Request.Cookies.TryGetValue("refreshToken", out var refreshTokenFromCookie))
+            {
+                return Unauthorized("Refresh token is missing");
+            }
+            var storedRefreshToken = _context.RefreshTokens.Include(rt=>rt.User)
+                .SingleOrDefault(rt => 
+                rt.Token == refreshTokenFromCookie &&
+                !rt.IsRevoked &&
+                rt.Expires > DateTime.UtcNow);
+
+            if(storedRefreshToken == null)
+            {
+                return Unauthorized("Invalid or expired refresh token");
+            }
+            storedRefreshToken.IsRevoked = true;
+
+            var newRefreshToken = new RefreshToken
+            {
+                Token = RefreshTokenHelper.GenerateToken(),
+                Expires = DateTime.Now.AddDays(7),
+                UserId = storedRefreshToken.UserId
+            };
+
+            _context.RefreshTokens.Add(newRefreshToken);
+            _context.SaveChanges();
+
+            Response.Cookies.Append("refreshToken", newRefreshToken.Token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = newRefreshToken.Expires
+            });
+
+            var newAccessToken = _jwtTokenService.GenerateToken(storedRefreshToken.User);
+
+            return Ok( new
+            {
+                AccessToken = newAccessToken,
+            });
         }
     } 
 }
