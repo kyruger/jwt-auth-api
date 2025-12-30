@@ -151,14 +151,30 @@ namespace JwtAuthApi.Controllers
 
             var storedRefreshToken = _context.RefreshTokens.
                 SingleOrDefault(rt=>
-                rt.Token == refreshTokenFromCookie &&
-                !rt.IsRevoked);
+                rt.Token == refreshTokenFromCookie);
 
-            if(storedRefreshToken != null)
+            if(storedRefreshToken == null)
             {
-                storedRefreshToken.IsRevoked = true;
-                _context.SaveChanges();
+                Response.Cookies.Delete("refreshToken");
+                return Ok("Logged out successfully");
             }
+
+            if(storedRefreshToken.IsRevoked)
+            {
+                var userTokens = _context.RefreshTokens
+                    .Where(rt=> rt.UserId == storedRefreshToken.UserId && !rt.IsRevoked).ToList();
+
+                foreach(var token in userTokens)
+                    token.IsRevoked = true;
+
+
+                _context.SaveChanges();
+
+                Response.Cookies.Delete("refreshToken");
+            }
+
+            storedRefreshToken.IsRevoked = true;
+            _context.SaveChanges();
 
 
             Response.Cookies.Delete("refreshToken");
